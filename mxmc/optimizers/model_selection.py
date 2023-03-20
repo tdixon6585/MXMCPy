@@ -11,15 +11,15 @@ class AutoModelSelection:
     def __init__(self, optimizer):
         self._optimizer = optimizer
 
-    def optimize(self, target_cost):
+    def optimize(self, target_cost, *args, **kwargs):
         best_indices = None
         best_result = self._optimizer._get_invalid_result()
         num_models = self._optimizer.get_num_models()
-
+        
         for indices in self._get_subsets_of_model_indices(num_models):
             best_result, best_indices = \
                 self._test_candidate_optimizer(target_cost, indices,
-                                               best_result, best_indices)
+                                               best_result, best_indices, *args, **kwargs)
 
         if best_indices is None:
             return best_result
@@ -36,11 +36,11 @@ class AutoModelSelection:
         return OptimizationResult(actual_cost, estimator_variance, allocation)
 
     def _test_candidate_optimizer(self, target_cost, indices,
-                                  best_result, best_indices):
+                                  best_result, best_indices, *args, **kwargs):
 
         candidate_optimizer = self._optimizer.subset(indices)
         try:
-            opt_result = candidate_optimizer.optimize(target_cost)
+            opt_result = candidate_optimizer.optimize(target_cost,*args,**kwargs)
         except InconsistentModelError:
             return best_result, best_indices
 

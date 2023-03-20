@@ -53,7 +53,7 @@ class Optimizer:
 
         return ALGORITHM_MAP[algorithm_name.lower()]
 
-    def optimize(self, algorithm, target_cost, auto_model_selection=False):
+    def optimize(self, algorithm, target_cost, auto_model_selection=False, *o_args, **o_kwargs):
         '''
         Performs variance minimization optimization to determine the optimal
         sample allocation across available models within a specified target
@@ -81,4 +81,4 @@ class Optimizer:
                                                      **self._kwargs)
         if auto_model_selection:
             optimizer = AutoModelSelection(optimizer)
-        return optimizer.optimize(target_cost=target_cost)
+        return optimizer.optimize(target_cost=target_cost, *o_args, **o_kwargs)

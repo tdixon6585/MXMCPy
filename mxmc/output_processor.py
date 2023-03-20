@@ -34,44 +34,66 @@ class OutputProcessor:
         :Returns: covariance matrix among all model outputs (2D np.array with
             size equal to the number of models).
         '''
+        if len(model_outputs[0].shape) == 2:
+            nvariables = model_outputs[0].shape[0]
+        else:
+            nvariables = 1
 
         output_array = OutputProcessor._build_output_array(model_outputs,
-                                                           sample_allocation)
+                                                           sample_allocation, nvariables)
         cov_matrix = OutputProcessor._compute_cov_elements(output_array)
         return np.array(cov_matrix)
 
     @staticmethod
-    def _build_output_array(model_outputs, sample_allocation):
+    def _build_output_array(model_outputs, sample_allocation, nvariables):
         if sample_allocation is None:
-            model_inds = [list(range(len(out))) for out in model_outputs]
-
+            if nvariables > 1:
+                model_inds = [list(range(len(out[0]))) for out in model_outputs]
+            else:
+                model_inds = [list(range(len(out))) for out in model_outputs]
         else:
             model_inds = [sample_allocation.get_sample_indices_for_model(i)
                           for i in range(len(model_outputs))]
 
         return OutputProcessor._make_output_array_from_indices(
-            model_inds, model_outputs)
+            model_inds, model_outputs,nvariables)
 
     @staticmethod
-    def _make_output_array_from_indices(model_inds, model_outputs):
+    def _make_output_array_from_indices(model_inds, model_outputs, nvariables):
+        '''
+        At one index of model_outputs, 
+        Each row should be a variable, and each column
+        a single observation of those variables, similarly to np.cov()
+        '''
+            
         max_model_inds = [max(i) for i in model_inds if i]
 
         if not max_model_inds:
             return np.empty((0, 0))
 
         max_ind = max(max_model_inds)
-        output_array = np.full((len(model_outputs), max_ind + 1), np.nan)
-
-        for i, (inds, out) in enumerate(zip(model_inds, model_outputs)):
+        if nvariables > 1:
+            indeces_list = []
+            variable_list = np.full((nvariables*len(model_outputs), max_ind + 1), np.nan)
+            for ii in range(len(model_outputs)):
+                for jj in range(nvariables):
+                    variable_list[ii*nvariables+jj] = model_outputs[ii][jj]
+                    indeces_list.append(model_inds[ii])
+        else:
+            variable_list = model_outputs
+            indeces_list = model_inds
+            
+        output_array = np.full((nvariables*len(model_outputs), max_ind + 1), np.nan)
+        for i, (inds, out) in enumerate(zip(indeces_list, variable_list)):
             output_array[i, inds] = out
         return output_array
 
     @staticmethod
     def _compute_cov_elements(output_array):
-        num_models = output_array.shape[0]
-        matrix = np.full((num_models, num_models), np.nan)
-        for i in range(num_models):
-            for j in range(i, num_models):
+        num_totvars = output_array.shape[0]
+        matrix = np.full((num_totvars, num_totvars), np.nan)
+        for i in range(num_totvars):
+            for j in range(i, num_totvars):
                 filter_ = np.logical_and(~np.isnan(output_array[i]),
                                          ~np.isnan(output_array[j]))
                 if len(output_array[i, filter_]) <= 1:

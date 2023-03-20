@@ -16,11 +16,14 @@ class RecursionEnumerator(OptimizerBase):
         super().__init__(*args, **kwargs)
         self._alloc_class = ACVSampleAllocation
 
-    def optimize(self, target_cost):
+    def optimize(self, target_cost, variance_function=None):
+        if variance_function is None:
+            variance_function = lambda x: x.diagonal(dim1=-1,dim2=-2).sum(-1)
+        
         if target_cost < np.sum(self._model_costs):
             return self._get_invalid_result()
         if self._num_models == 1:
-            return self._get_monte_carlo_result(target_cost)
+            return self._get_monte_carlo_result(target_cost, variance_function)
 
         best_result = None
         for recursion_refs in self._recursion_iterator():
@@ -28,7 +31,7 @@ class RecursionEnumerator(OptimizerBase):
                                               self._covariance,
                                               recursion_refs=recursion_refs)
 
-            sub_opt_result = sub_opt.optimize(target_cost)
+            sub_opt_result = sub_opt.optimize(target_cost,variance_function)
             if best_result is None \
                     or (np.array(sub_opt_result.variance).sum()
                         < np.array(best_result.variance).sum()):

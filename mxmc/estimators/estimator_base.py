@@ -18,6 +18,7 @@ class EstimatorBase(metaclass=ABCMeta):
 
         self._allocation = allocation
         self._covariance = covariance
+        self._num_outputs = int(len(covariance)/self._allocation.num_models)
         self._approximate_variance = None
 
         if covariance is not None:
@@ -30,7 +31,7 @@ class EstimatorBase(metaclass=ABCMeta):
         return self._approximate_variance
 
     def _validation(self, covariance):
-        if len(covariance) != self._allocation.num_models:
+        if len(covariance) != self._num_outputs*self._allocation.num_models:
             raise ValueError("Covariance and allocation dimensions must match")
         if not np.allclose(covariance.transpose(), covariance):
             raise ValueError("Covariance array must be symmetric")
