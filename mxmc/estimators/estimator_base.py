@@ -63,10 +63,18 @@ class EstimatorBase(metaclass=ABCMeta):
 
         samples_per_model = self._allocation.get_number_of_samples_per_model()
         for outputs, num_samps in zip(model_outputs, samples_per_model):
-
-            if len(outputs) != num_samps:
+            '''Model outputs must be (model_num, num_outputs, num_samps)'''
+            if self._num_outputs == 1 and len(outputs) != num_samps:
                 raise ValueError("Number of outputs per model does not match "
                                  "the sample allocation")
-            if len(outputs.shape) > 1 and outputs.shape[1] != 1:
-                raise ValueError("Estimators are not currently implemented "
-                                 "for multiple outputs")
+            if self._num_outputs > 1 and outputs.shape[0] != self._num_outputs:
+                raise ValueError("The Model outputs do not match the number of estimator outputs")
+            if self._num_outputs > 1 and outputs.shape[1] != num_samps:
+                raise ValueError("The Model outputs does not match the number of allocated samples")
+            
+            # if len(outputs) != num_samps:
+            #     raise ValueError("Number of outputs per model does not match "
+            #                      "the sample allocation")
+            # if len(outputs.shape) > 1 and outputs.shape[1] != 1:
+            #     raise ValueError("Estimators are not currently implemented "
+            #                      "for multiple outputs")
